@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="GtkDialog" id="save_before_close_dialog">
+    <property name="default-width">480</property>
+    <property name="default-height">200</property>
+    <property name="resizable">0</property>
+    <property name="modal">1</property>
+    <child internal-child="content_area">
+      <object class="GtkBox" id="content_area">
+        <property name="orientation">vertical</property>
+        <property name="spacing">5</property>
+        <child>
+          <object class="GtkLabel">
+            <attributes>
+              <attribute name="family" value="monospace" />
+              <attribute name="weight" value="PANGO_WEIGHT_BOLD" />
+              <attribute name="size" value="14336" />
+            </attributes>
+            <property name="label">Save changes before close?</property>
+            <property name="halign">center</property>
+            <property name="valign">center</property>
+            <property name="hexpand">TRUE</property>
+            <property name="vexpand">TRUE</property>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child type="action">
+      <object class="GtkButton" id="btn_discard">
+        <property name="label">_Discard</property>
+        <property name="use-underline">TRUE</property>
+        <property name="hexpand">TRUE</property>
+      </object>
+    </child>
+    <child type="action">
+      <object class="GtkButton" id="btn_save">
+        <property name="label">_Save</property>
+        <property name="use-underline">TRUE</property>
+        <property name="hexpand">TRUE</property>
+      </object>
+    </child>
+    <action-widgets>
+      <action-widget response="reject">btn_discard</action-widget>
+      <action-widget response="accept" default="true">btn_save</action-widget>
+    </action-widgets>
+  </object>
+</interface>
+
