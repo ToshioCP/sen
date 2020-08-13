@@ -2,8 +2,8 @@
 <interface>
   <object class="GtkApplicationWindow" id="win">
     <property name="title">file editor</property>
-    <property name="default-width">600</property>
-    <property name="default-height">400</property>
+    <property name="default-width">800</property>
+    <property name="default-height">600</property>
     <child>
       <object class="GtkBox" id="boxv">
         <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
@@ -57,6 +57,67 @@
             <child>
               <object class="GtkLabel" id="dmy3">
                 <property name="width-chars">10</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+          <property name="orientation">GTK_ORIENTATION_HORIZONTAL</property>
+            <child>
+              <object class="GtkToggleButton" id="btnre">
+                <property name="label">RegExp</property>
+                <property name="active">FALSE</property>
+                <signal name="toggled" handler="regexp_cb" object="nb" swapped="FALSE">></signal>
+              </object>
+            </child>
+            <child>
+              <object class="GtkSearchEntry" id="search_entry">
+                <signal name="activate" handler="search_entry_activate_cb" object="nb" swapped="FALSE"></signal>
+                <signal name="next-match" handler="search_entry_next_match_cb" object="nb" swapped="FALSE"></signal>
+                <signal name="previous-match" handler="search_entry_previous_match_cb" object="nb" swapped="FALSE"></signal>
+                <signal name="stop-search" handler="search_entry_stop_search_cb" object="nb" swapped="FALSE"></signal>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="btnfind">
+                <property name="label">Find</property>
+                <signal name="clicked" handler="find_cb" object="search_entry" swapped="FALSE"></signal>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="btnnext">
+                <property name="label">Next</property>
+                <signal name="clicked" handler="next_cb" object="search_entry" swapped="FALSE"></signal>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="btnprev">
+                <property name="label">Prev</property>
+                <signal name="clicked" handler="prev_cb" object="search_entry" swapped="FALSE"></signal>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="btnstop">
+                <property name="label">Stop</property>
+                <signal name="clicked" handler="stop_cb" object="search_entry" swapped="FALSE"></signal>
+              </object>
+            </child>
+            <child>
+              <object class="GtkEntry" id="replace_entry">
+                <signal name="icon-press" handler="replace_entry_clear_cb"></signal>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="btnrp">
+                <property name="label">Replace</property>
+                <signal name="clicked" handler="replace_cb" object="nb" swapped="FALSE"></signal>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="btnrpall">
+                <property name="label">ReplaceAll</property>
+                <signal name="clicked" handler="replace_all_cb" object="nb" swapped="FALSE"></signal>
               </object>
             </child>
           </object>

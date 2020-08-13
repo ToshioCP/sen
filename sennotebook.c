@@ -36,6 +36,20 @@ page_close_all_cb (GtkNotebook *nb, GtkWidget *child, guint page_num, gpointer u
     notebook_page_close (nb);
 }
 
+SenTextView *
+notebook_page_get_current_text_view (GtkNotebook *nb) {
+  int i;
+  GtkWidget *scr, *tv;
+
+  if ((i = gtk_notebook_get_current_page (nb)) < 0)
+    return NULL;
+  else {
+    scr = gtk_notebook_get_nth_page (nb, i);
+    tv = gtk_scrolled_window_get_child (GTK_SCROLLED_WINDOW (scr));
+    return SEN_TEXT_VIEW (tv);
+  }
+}
+
 void
 notebook_page_close_all (GtkNotebook *nb) {
   g_return_if_fail(GTK_IS_NOTEBOOK (nb));
@@ -69,9 +83,9 @@ notebook_page_close(GtkNotebook *nb) {
     return;
   scr = gtk_notebook_get_nth_page (nb, i);
   tv = gtk_scrolled_window_get_child (GTK_SCROLLED_WINDOW (scr));
-  g_signal_connect (TFE_TEXT_VIEW (tv), "save-finished", G_CALLBACK (page_close_cb), NULL);
+  g_signal_connect (SEN_TEXT_VIEW (tv), "save-finished", G_CALLBACK (page_close_cb), NULL);
   tabname = gtk_notebook_get_tab_label_text (nb, scr);
-  sen_text_view_save_before_close (TFE_TEXT_VIEW (tv), tabname);
+  sen_text_view_save_before_close (SEN_TEXT_VIEW (tv), tabname);
 }
 
 /* Save the contents in the current page */
@@ -87,7 +101,7 @@ notebook_page_save(GtkNotebook *nb) {
     return;
   scr = gtk_notebook_get_nth_page (nb, i);
   tv = gtk_scrolled_window_get_child (GTK_SCROLLED_WINDOW (scr));
-  sen_text_view_save (TFE_TEXT_VIEW (tv));
+  sen_text_view_save (SEN_TEXT_VIEW (tv));
 }
 
 void
@@ -102,7 +116,7 @@ notebook_page_saveas(GtkNotebook *nb) {
     return;
   scr = gtk_notebook_get_nth_page (nb, i);
   tv = gtk_scrolled_window_get_child (GTK_SCROLLED_WINDOW (scr));
-  sen_text_view_saveas (TFE_TEXT_VIEW (tv));
+  sen_text_view_saveas (SEN_TEXT_VIEW (tv));
 }
 
 static void
@@ -127,7 +141,7 @@ open_response (SenTextView *tv, int response, GtkNotebook *nb) {
   GFile *file;
   char *filename;
 
-  if (response != TFE_OPEN_RESPONSE_SUCCESS)
+  if (response != SEN_OPEN_RESPONSE_SUCCESS)
     g_object_unref (tv);
   else if (! G_IS_FILE (file = sen_text_view_get_file (tv)))
     g_object_unref (tv);
@@ -145,8 +159,8 @@ notebook_page_open (GtkNotebook *nb) {
   GtkWidget *tv;
 
   tv = sen_text_view_new ();
-  g_signal_connect (TFE_TEXT_VIEW (tv), "open-response", G_CALLBACK (open_response), nb);
-  sen_text_view_open (TFE_TEXT_VIEW (tv));
+  g_signal_connect (SEN_TEXT_VIEW (tv), "open-response", G_CALLBACK (open_response), nb);
+  sen_text_view_open (SEN_TEXT_VIEW (tv));
 }
 
 void
