@@ -1,86 +1,43 @@
 #include "sen.h"
 
-void
-regexp_cb (GtkToggleButton *btnre, gpointer user_data) {
-  GtkNotebook *nb = GTK_NOTEBOOK (user_data);
-  SenTextView *tv = notebook_page_get_current_text_view (nb);
+static GtkNotebook *sen_notebook = NULL;
 
-  sen_text_view_set_regexp (tv, gtk_toggle_button_get_active (btnre));
+static GtkNotebook *
+get_notebook() {
+  return sen_notebook;
+}
+
+static SenTextView *
+get_current_tv () {
+  return (notebook_page_get_current_text_view (get_notebook()));
 }
 
 void
-search_entry_activate_cb (GtkSearchEntry *search_entry, gpointer user_data) {
-  const char *text = gtk_editable_get_text (GTK_EDITABLE (search_entry));
-  GtkNotebook *nb = GTK_NOTEBOOK (user_data);
-  SenTextView *tv = notebook_page_get_current_text_view (nb);
-
-  if (text == NULL)
-    return;
-  sen_text_view_search (tv, text);
+regexp_cb (GtkToggleButton *btnre) {
+  sen_text_view_set_regexp (get_current_tv (), gtk_toggle_button_get_active (btnre));
 }
 
 void
-search_entry_next_match_cb (GtkSearchEntry *search_entry, gpointer user_data) {
-  GtkNotebook *nb = GTK_NOTEBOOK (user_data);
-  SenTextView *tv = notebook_page_get_current_text_view (nb);
+search_entry_activate_cb (GtkSearchEntry *search_entry) {
+  const char *text;
 
-  sen_text_view_search_next (tv);
+  text = gtk_editable_get_text (GTK_EDITABLE (search_entry));
+  sen_text_view_search (get_current_tv (), text);
 }
 
 void
-search_entry_previous_match_cb (GtkSearchEntry *search_entry, gpointer user_data) {
-  GtkNotebook *nb = GTK_NOTEBOOK (user_data);
-  SenTextView *tv = notebook_page_get_current_text_view (nb);
-
-  sen_text_view_search_prev (tv);
+search_entry_next_match_cb (GtkSearchEntry *search_entry) {
+  sen_text_view_search_next (get_current_tv ());
 }
 
 void
-search_entry_stop_search_cb (GtkSearchEntry *search_entry, gpointer user_data) {
-  GtkNotebook *nb = GTK_NOTEBOOK (user_data);
-  SenTextView *tv = notebook_page_get_current_text_view (nb);
-
-  sen_text_view_search_stop (tv);
+search_entry_previous_match_cb (GtkSearchEntry *search_entry) {
+  sen_text_view_search_prev (get_current_tv ());
 }
 
 void
-find_cb (GtkButton *btn, gpointer user_data) {
-GtkSearchEntry *search_entry = GTK_SEARCH_ENTRY (user_data);
-GtkWidget *boxh = gtk_widget_get_parent (GTK_WIDGET (btn));
-GtkWidget *boxv = gtk_widget_get_parent (GTK_WIDGET (boxh));
-GtkNotebook *nb = GTK_NOTEBOOK (gtk_widget_get_last_child (boxv));
-
-search_entry_activate_cb (search_entry, nb);
-}
-
-void
-next_cb (GtkButton *btn, gpointer user_data) {
-GtkSearchEntry *search_entry = GTK_SEARCH_ENTRY (user_data);
-GtkWidget *boxh = gtk_widget_get_parent (GTK_WIDGET (btn));
-GtkWidget *boxv = gtk_widget_get_parent (GTK_WIDGET (boxh));
-GtkNotebook *nb = GTK_NOTEBOOK (gtk_widget_get_last_child (boxv));
-
-search_entry_next_match_cb (search_entry, nb);
-}
-
-void
-prev_cb (GtkButton *btn, gpointer user_data) {
-GtkSearchEntry *search_entry = GTK_SEARCH_ENTRY (user_data);
-GtkWidget *boxh = gtk_widget_get_parent (GTK_WIDGET (btn));
-GtkWidget *boxv = gtk_widget_get_parent (GTK_WIDGET (boxh));
-GtkNotebook *nb = GTK_NOTEBOOK (gtk_widget_get_last_child (boxv));
-
-search_entry_previous_match_cb (search_entry, nb);
-}
-
-void
-stop_cb (GtkButton *btn, gpointer user_data) {
-GtkSearchEntry *search_entry = GTK_SEARCH_ENTRY (user_data);
-GtkWidget *boxh = gtk_widget_get_parent (GTK_WIDGET (btn));
-GtkWidget *boxv = gtk_widget_get_parent (GTK_WIDGET (boxh));
-GtkNotebook *nb = GTK_NOTEBOOK (gtk_widget_get_last_child (boxv));
-
-search_entry_stop_search_cb (search_entry, nb);
+search_entry_stop_search_cb (GtkSearchEntry *search_entry) {
+  sen_text_view_search_stop (get_current_tv ());
 }
 
 static void
@@ -100,27 +57,18 @@ replace_entry_clear_cb (GtkEntry *entry) {
 
 void
 replace_cb (GtkButton *btnrp, gpointer user_data) {
-  GtkNotebook *nb = GTK_NOTEBOOK (user_data);
-  SenTextView *tv = notebook_page_get_current_text_view (nb);
-  GtkWidget *entry = gtk_widget_get_prev_sibling (GTK_WIDGET (btnrp));
-  const char *text = gtk_editable_get_text (GTK_EDITABLE (entry));
+  const char *text;
 
-  if (text[0] == '\0')
-    return;
-  sen_text_view_replace (tv, text);
+  text = gtk_editable_get_text (GTK_EDITABLE (user_data));
+  sen_text_view_replace (get_current_tv (), text);
 }
 
 void
 replace_all_cb (GtkButton *btnrpall, gpointer user_data) {
-  GtkNotebook *nb = GTK_NOTEBOOK (user_data);
-  SenTextView *tv = notebook_page_get_current_text_view (nb);
-  GtkWidget *btnrp = gtk_widget_get_prev_sibling (GTK_WIDGET (btnrpall));
-  GtkWidget *entry = gtk_widget_get_prev_sibling (GTK_WIDGET (btnrp));
-  const char *text = gtk_editable_get_text (GTK_EDITABLE (entry));
+  const char *text;
 
-  if (text[0] == '\0')
-    return;
-  sen_text_view_replace_all (tv, text);
+  text = gtk_editable_get_text (GTK_EDITABLE (user_data));
+  sen_text_view_replace_all (get_current_tv (), text);
 }
 
 static gboolean
@@ -220,7 +168,7 @@ sen_startup (GApplication *application) {
   build = gtk_builder_new_from_resource ("/com/github/ToshioCP/sen/sen.ui");
   win = GTK_APPLICATION_WINDOW (gtk_builder_get_object (build, "win"));
 
-  nb = GTK_NOTEBOOK (gtk_builder_get_object (build, "nb"));
+  nb = sen_notebook = GTK_NOTEBOOK (gtk_builder_get_object (build, "nb"));
   g_signal_connect (win, "close-request", G_CALLBACK (window_close_requested), nb);
   g_signal_connect (nb, "page-removed", G_CALLBACK (page_removed_cb), NULL);
   gtk_window_set_application (GTK_WINDOW (win), app);

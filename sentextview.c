@@ -124,9 +124,9 @@ open_dialog_response(GtkWidget *dialog, int response, SenTextView *tv) {
 }
 
 void
-sen_text_view_open (SenTextView *tv) {
+sen_text_view_open (SenTextView *tv, GtkWindow *win) {
   g_return_if_fail (SEN_IS_TEXT_VIEW (tv));
-  GtkWidget *win = gtk_widget_get_ancestor (GTK_WIDGET (tv), GTK_TYPE_WINDOW);
+  g_return_if_fail (GTK_IS_APPLICATION_WINDOW (win));
 
   GtkWidget *dialog = gtk_file_chooser_dialog_new ("Open file", GTK_WINDOW (win), GTK_FILE_CHOOSER_ACTION_OPEN,
                                         "Cancel", GTK_RESPONSE_CANCEL,
@@ -512,6 +512,7 @@ sen_text_view_search_stop (SenTextView *tv) {
 void
 sen_text_view_replace (SenTextView *tv, const char *text) {
   g_return_if_fail (SEN_IS_TEXT_VIEW (tv));
+  g_return_if_fail (text);
 
   GtkTextBuffer *buf = gtk_text_view_get_buffer (GTK_TEXT_VIEW (tv));
   GtkTextIter iter_insert;

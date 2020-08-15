@@ -13,7 +13,7 @@ GFile *
 sen_text_view_get_file (SenTextView *tv);
 
 void
-sen_text_view_open (SenTextView *tv);
+sen_text_view_open (SenTextView *tv, GtkWindow *win);
 
 void
 sen_text_view_save (SenTextView *tv);

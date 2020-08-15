@@ -141,9 +141,11 @@ open_response (SenTextView *tv, int response, GtkNotebook *nb) {
   GFile *file;
   char *filename;
 
-  if (response != SEN_OPEN_RESPONSE_SUCCESS)
+  if (response != SEN_OPEN_RESPONSE_SUCCESS) {
+    if (g_object_is_floating (tv))
+      g_object_ref_sink (tv);
     g_object_unref (tv);
-  else if (! G_IS_FILE (file = sen_text_view_get_file (tv)))
+  } else if (! G_IS_FILE (file = sen_text_view_get_file (tv)))
     g_object_unref (tv);
   else {
     filename = g_file_get_basename (file);
@@ -160,7 +162,7 @@ notebook_page_open (GtkNotebook *nb) {
 
   tv = sen_text_view_new ();
   g_signal_connect (SEN_TEXT_VIEW (tv), "open-response", G_CALLBACK (open_response), nb);
-  sen_text_view_open (SEN_TEXT_VIEW (tv));
+  sen_text_view_open (SEN_TEXT_VIEW (tv), GTK_WINDOW (gtk_widget_get_ancestor (GTK_WIDGET (nb), GTK_TYPE_APPLICATION_WINDOW)));
 }
 
 void

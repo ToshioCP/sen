@@ -68,39 +68,39 @@
               <object class="GtkToggleButton" id="btnre">
                 <property name="label">RegExp</property>
                 <property name="active">FALSE</property>
-                <signal name="toggled" handler="regexp_cb" object="nb" swapped="FALSE">></signal>
+                <signal name="toggled" handler="regexp_cb"></signal>
               </object>
             </child>
             <child>
               <object class="GtkSearchEntry" id="search_entry">
-                <signal name="activate" handler="search_entry_activate_cb" object="nb" swapped="FALSE"></signal>
-                <signal name="next-match" handler="search_entry_next_match_cb" object="nb" swapped="FALSE"></signal>
-                <signal name="previous-match" handler="search_entry_previous_match_cb" object="nb" swapped="FALSE"></signal>
-                <signal name="stop-search" handler="search_entry_stop_search_cb" object="nb" swapped="FALSE"></signal>
+                <signal name="activate" handler="search_entry_activate_cb"></signal>
+                <signal name="next-match" handler="search_entry_next_match_cb"></signal>
+                <signal name="previous-match" handler="search_entry_previous_match_cb"></signal>
+                <signal name="stop-search" handler="search_entry_stop_search_cb"></signal>
               </object>
             </child>
             <child>
               <object class="GtkButton" id="btnfind">
                 <property name="label">Find</property>
-                <signal name="clicked" handler="find_cb" object="search_entry" swapped="FALSE"></signal>
+                <signal name="clicked" handler="search_entry_activate_cb" object="search_entry" swapped="TRUE"></signal>
               </object>
             </child>
             <child>
               <object class="GtkButton" id="btnnext">
                 <property name="label">Next</property>
-                <signal name="clicked" handler="next_cb" object="search_entry" swapped="FALSE"></signal>
+                <signal name="clicked" handler="search_entry_next_match_cb" object="search_entry" swapped="TRUE"></signal>
               </object>
             </child>
             <child>
               <object class="GtkButton" id="btnprev">
                 <property name="label">Prev</property>
-                <signal name="clicked" handler="prev_cb" object="search_entry" swapped="FALSE"></signal>
+                <signal name="clicked" handler="search_entry_previous_match_cb" object="search_entry" swapped="TRUE"></signal>
               </object>
             </child>
             <child>
               <object class="GtkButton" id="btnstop">
                 <property name="label">Stop</property>
-                <signal name="clicked" handler="stop_cb" object="search_entry" swapped="FALSE"></signal>
+                <signal name="clicked" handler="search_entry_stop_search_cb" object="search_entry" swapped="TRUE"></signal>
               </object>
             </child>
             <child>
@@ -111,13 +111,13 @@
             <child>
               <object class="GtkButton" id="btnrp">
                 <property name="label">Replace</property>
-                <signal name="clicked" handler="replace_cb" object="nb" swapped="FALSE"></signal>
+                <signal name="clicked" handler="replace_cb" object="replace_entry" swapped="FALSE"></signal>
               </object>
             </child>
             <child>
               <object class="GtkButton" id="btnrpall">
                 <property name="label">ReplaceAll</property>
-                <signal name="clicked" handler="replace_all_cb" object="nb" swapped="FALSE"></signal>
+                <signal name="clicked" handler="replace_all_cb" object="replace_entry" swapped="FALSE"></signal>
               </object>
             </child>
           </object>
