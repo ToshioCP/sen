@@ -31,6 +31,9 @@ GtkWidget *
 sen_text_view_new (void);
 
 void
+sen_text_view_construct (SenTextView *tv);
+
+void
 sen_text_view_set_regexp (SenTextView *tv, gboolean button_status);
 
 void
@@ -50,4 +53,7 @@ sen_text_view_replace (SenTextView *tv, const char *text);
 
 void
 sen_text_view_replace_all (SenTextView *tv, const char *text);
+
+GtkWidget *
+line_number_text_view_new (SenTextView *tv, GtkScrolledWindow *scr);
 

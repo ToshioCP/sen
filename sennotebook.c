@@ -18,11 +18,11 @@ file_changed (SenTextView *tv, GtkNotebook *nb) {
   GtkWidget *label;
 
   file = sen_text_view_get_file (tv);
-  scr = gtk_widget_get_parent (GTK_WIDGET (tv));
   if (G_IS_FILE (file))
     filename = g_file_get_basename (file);
   else
     filename = get_untitled ();
+  scr = gtk_widget_get_parent (GTK_WIDGET (tv));
   label = gtk_label_new (filename);
   gtk_notebook_set_tab_label (nb, scr, label);
   g_object_unref (file);
@@ -64,8 +64,8 @@ page_close_cb (SenTextView *tv) {
   GtkWidget *scr;
   int i;
 
+  nb = GTK_NOTEBOOK (gtk_widget_get_ancestor (GTK_WIDGET (tv), GTK_TYPE_NOTEBOOK));
   scr = gtk_widget_get_parent (GTK_WIDGET (tv));
-  nb = GTK_NOTEBOOK (gtk_widget_get_ancestor (scr, GTK_TYPE_NOTEBOOK));
   i = gtk_notebook_page_num (nb, GTK_WIDGET (scr));
   gtk_notebook_remove_page (nb, i);
 }
@@ -125,15 +125,17 @@ notebook_page_build (GtkNotebook *nb, GtkWidget *tv, char *filename) {
   GtkNotebookPage *nbp;
   GtkWidget *lab;
   int i;
+  
   scr = gtk_scrolled_window_new ();
-
   gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scr), tv);
   lab = gtk_label_new (filename);
   i = gtk_notebook_append_page (nb, scr, lab);
   nbp = gtk_notebook_get_page (nb, scr);
   g_object_set (nbp, "tab-expand", TRUE, NULL);
-  gtk_notebook_set_current_page (nb, i);
   g_signal_connect (GTK_TEXT_VIEW (tv), "change-file", G_CALLBACK (file_changed), nb);
+  gtk_notebook_set_current_page (nb, i);
+/* The following constructor must be called after the SenTextView instance is set to GtkScrolledWindow as a child. */
+  sen_text_view_construct (SEN_TEXT_VIEW (tv));
 }
 
 static void

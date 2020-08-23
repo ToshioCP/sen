@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <object class="GtkApplicationWindow" id="win">
-    <property name="title">file editor</property>
+    <property name="title">Sen file editor</property>
     <property name="default-width">800</property>
     <property name="default-height">600</property>
     <child>

@@ -4,11 +4,13 @@
 struct _SenTextView
 {
   GtkTextView parent;
-  GtkTextBuffer *tb;
+  GtkTextBuffer *buf;
   GFile *file;
-  gboolean changed;
   char *search_text;
   gboolean regexp;
+  GtkDrawingArea *line;
+  int line_width;
+  gulong line_buffer_changed_handler_id;
 };
 
 G_DEFINE_TYPE (SenTextView, sen_text_view, GTK_TYPE_TEXT_VIEW);
@@ -22,11 +24,19 @@ enum {
 
 static guint sen_text_view_signals[NUMBER_OF_SIGNALS];
 
-/* Signal handler */
+#define SEN_LINE_LEFT_RIGHT_PADDING 5
+
+void
+line_calculate_set_width (SenTextView *tv, int nlines);
+
 static void
-on_changed (GtkTextBuffer *tb, SenTextView *tv) {
-  tv->changed = TRUE;
-}
+line_buffer_changed_cb (GtkTextBuffer *buf, SenTextView *tv);
+
+static GtkWidget *
+sen_line_new (SenTextView *tv);
+
+static void
+scrolled_cb (GtkAdjustment *adjustment, SenTextView *tv);
 
 static void
 sen_text_view_dispose (GObject *gobject) {
@@ -39,11 +49,26 @@ sen_text_view_dispose (GObject *gobject) {
 
 static void
 sen_text_view_init (SenTextView *tv) {
-  tv->tb = gtk_text_view_get_buffer (GTK_TEXT_VIEW (tv));
+  tv->buf = gtk_text_view_get_buffer (GTK_TEXT_VIEW (tv));
   tv->file = NULL;
-  tv->changed = FALSE;
-  gtk_text_view_set_wrap_mode (GTK_TEXT_VIEW (tv), GTK_WRAP_WORD_CHAR);
-  g_signal_connect (tv->tb, "changed", G_CALLBACK (on_changed), tv);
+  tv->search_text = NULL;
+  tv->regexp = FALSE;
+  gtk_text_buffer_set_modified (tv->buf, FALSE);
+  gtk_text_view_set_wrap_mode (GTK_TEXT_VIEW (tv), GTK_WRAP_WORD_CHAR); 
+  gtk_text_view_set_left_margin (GTK_TEXT_VIEW (tv), 10);
+  gtk_text_view_set_right_margin (GTK_TEXT_VIEW (tv), 10);
+  gtk_text_view_set_top_margin (GTK_TEXT_VIEW (tv), 10);
+  gtk_text_view_set_bottom_margin (GTK_TEXT_VIEW (tv), 10);
+  tv->line = GTK_DRAWING_AREA (sen_line_new (tv));
+  tv->line_width = 0;
+  tv->line_buffer_changed_handler_id = g_signal_connect (tv->buf, "changed", G_CALLBACK (line_buffer_changed_cb), tv);
+  line_calculate_set_width (tv, 10); /* two digits is the default size of an empty textview. */
+}
+
+void
+sen_text_view_construct (SenTextView *tv) {
+  GtkAdjustment *adjustment = gtk_scrollable_get_vadjustment (GTK_SCROLLABLE (tv));
+  g_signal_connect (adjustment, "value-changed", G_CALLBACK (scrolled_cb), tv);
 }
 
 static void
@@ -114,10 +139,13 @@ open_dialog_response(GtkWidget *dialog, int response, SenTextView *tv) {
     g_error_free (err);
     g_signal_emit (tv, sen_text_view_signals[OPEN_RESPONSE], 0, SEN_OPEN_RESPONSE_ERROR);
   } else {
-    gtk_text_buffer_set_text (tv->tb, contents, length);
+    g_signal_handler_block (tv->buf, tv->line_buffer_changed_handler_id);
+    gtk_text_buffer_set_text (tv->buf, contents, length);
+    g_signal_handler_unblock (tv->buf, tv->line_buffer_changed_handler_id);
+    line_calculate_set_width (tv, gtk_text_buffer_get_line_count (tv->buf));
     g_free (contents);
     tv->file = file;
-    tv->changed = FALSE;
+    gtk_text_buffer_set_modified (tv->buf, FALSE);
     g_signal_emit (tv, sen_text_view_signals[OPEN_RESPONSE], 0, SEN_OPEN_RESPONSE_SUCCESS);
   }
   gtk_window_destroy (GTK_WINDOW (dialog));
@@ -153,7 +181,7 @@ sen_text_view_save_before_close (SenTextView *tv, const char *tabname) {
   GtkWidget *dialog;
   GtkWidget *win;
 
-  if (tv->changed) {
+  if (gtk_text_buffer_get_modified(tv->buf)) {
     build = gtk_builder_new_from_resource ("/com/github/ToshioCP/sen/dialog.ui");
     dialog = GTK_WIDGET (gtk_builder_get_object (build, "save_before_close_dialog"));
     win = gtk_widget_get_ancestor (GTK_WIDGET (tv), GTK_TYPE_WINDOW);
@@ -172,7 +200,7 @@ saveas_dialog_response (GtkWidget *dialog, int response, SenTextView *tv) {
 
   if (response == GTK_RESPONSE_ACCEPT && G_IS_FILE (file = gtk_file_chooser_get_file (GTK_FILE_CHOOSER (dialog)))) {
     tv->file = file;
-    tv->changed = TRUE;
+    gtk_text_buffer_set_modified (tv->buf, TRUE);
     g_signal_emit (tv, sen_text_view_signals[CHANGE_FILE], 0);
     sen_text_view_save (SEN_TEXT_VIEW (tv));
   } else
@@ -191,15 +219,15 @@ sen_text_view_save (SenTextView *tv) {
   GtkWidget *win = gtk_widget_get_ancestor (GTK_WIDGET (tv), GTK_TYPE_WINDOW);
   GError *err = NULL;
 
-  if (! tv->changed)
+  if (! gtk_text_buffer_get_modified(tv->buf))
     g_signal_emit (tv, sen_text_view_signals[SAVE_FINISHED], 0);
   else if (tv->file == NULL)
     sen_text_view_saveas (tv);
   else {
-    gtk_text_buffer_get_bounds (tv->tb, &start_iter, &end_iter);
-    contents = gtk_text_buffer_get_text (tv->tb, &start_iter, &end_iter, FALSE);
+    gtk_text_buffer_get_bounds (tv->buf, &start_iter, &end_iter);
+    contents = gtk_text_buffer_get_text (tv->buf, &start_iter, &end_iter, FALSE);
     if (g_file_replace_contents (tv->file, contents, strlen (contents), NULL, TRUE, G_FILE_CREATE_NONE, NULL, NULL, &err))
-      tv->changed = FALSE;
+      gtk_text_buffer_set_modified (tv->buf, FALSE);
     else {
 /* It is possible that tv->file is broken. */
 /* It is a good idea to set tv->file to NULL. */
@@ -207,7 +235,7 @@ sen_text_view_save (SenTextView *tv) {
         g_object_unref (tv->file);
       tv->file =NULL;
       g_signal_emit (tv, sen_text_view_signals[CHANGE_FILE], 0);
-      tv->changed = TRUE;
+      gtk_text_buffer_set_modified (tv->buf, TRUE);
       message_dialog = gtk_message_dialog_new (GTK_WINDOW (win), GTK_DIALOG_MODAL,
                                                GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE,
                                               "%s.\n", err->message);
@@ -246,9 +274,9 @@ sen_text_view_new_with_file (GFile *file) {
     return NULL;
 
   tv = sen_text_view_new();
-  gtk_text_buffer_set_text (SEN_TEXT_VIEW (tv)->tb, contents, length);
+  gtk_text_buffer_set_text (SEN_TEXT_VIEW (tv)->buf, contents, length);
   g_free (contents);
-  SEN_TEXT_VIEW (tv)->changed = FALSE;
+  gtk_text_buffer_set_modified (SEN_TEXT_VIEW (tv)->buf, FALSE);
   SEN_TEXT_VIEW (tv)->file = g_file_dup (file);
   return tv;
 }
@@ -258,9 +286,6 @@ sen_text_view_new (void) {
   GtkWidget *tv;
 
   tv = gtk_widget_new (SEN_TYPE_TEXT_VIEW, NULL);
-  (SEN_TEXT_VIEW (tv))->search_text = NULL;
-  (SEN_TEXT_VIEW (tv))->regexp = FALSE;
-
   return tv;
 }
 
@@ -581,5 +606,104 @@ sen_text_view_replace_all (SenTextView *tv, const char *text) {
     }      
   }
   gtk_widget_grab_focus (GTK_WIDGET (tv));
+}
+
+/* ------------------------------------- */
+/* gutter for Line numbers               */
+/* ------------------------------------- */
+
+static void
+draw_lines (GtkDrawingArea *line, cairo_t *cr, int width, int height, gpointer user_data) {
+  SenTextView *tv = SEN_TEXT_VIEW (user_data);
+  GdkRGBA color;
+
+/* background color */
+  cairo_set_source_rgb (cr, 0.96, 0.96, 0.96);
+  cairo_paint (cr);
+
+/* set color */
+  GtkStyleContext *context = gtk_widget_get_style_context (GTK_WIDGET (line));
+  gtk_style_context_get_color (context, &color);
+  gdk_cairo_set_source_rgba (cr, &color);
+
+/* draw line numbers */
+  GdkRectangle visible_rect;
+  GtkTextIter iter;
+  int line_number;
+  int buffer_y, window_y, line_height;
+  char ln_text[20];
+  PangoLayout *layout;
+
+  gtk_text_view_get_visible_rect (GTK_TEXT_VIEW (tv), &visible_rect);
+  gtk_text_view_get_line_at_y (GTK_TEXT_VIEW (tv), &iter, visible_rect.y, NULL);
+  layout = gtk_widget_create_pango_layout (GTK_WIDGET (tv), NULL);
+  for (;;) {
+    gtk_text_view_get_line_yrange (GTK_TEXT_VIEW (tv), &iter, &buffer_y, &line_height);
+    gtk_text_view_buffer_to_window_coords (GTK_TEXT_VIEW (tv), GTK_TEXT_WINDOW_LEFT, 0, buffer_y, NULL, &window_y);
+
+    line_number = gtk_text_iter_get_line (&iter) + 1;
+    g_snprintf (ln_text, sizeof ln_text, "%d", line_number);
+    pango_layout_set_text (layout, ln_text, -1);
+    pango_layout_set_width (layout, (width-SEN_LINE_LEFT_RIGHT_PADDING*2)*PANGO_SCALE);
+    pango_layout_set_alignment (layout, PANGO_ALIGN_RIGHT);
+    gtk_render_layout (context, cr, (double) SEN_LINE_LEFT_RIGHT_PADDING, (double) window_y-5, layout);
+/* The following codes are also possible */
+/*    cairo_move_to (cr, (double) SEN_LINE_LEFT_RIGHT_PADDING, (double) window_y);*/
+/*    pango_cairo_show_layout (cr, layout);*/
+
+    if (! gtk_text_view_forward_display_line (GTK_TEXT_VIEW (tv), &iter))
+      break;
+  }
+  g_object_unref (layout);
+}
+
+/* When should the width of the drawing area be changed? */
+/* - view is generated => default width is 2*/
+/* - after loading a file*/
+/* - when number of lines is changed */
+
+void
+line_calculate_set_width (SenTextView *tv, int nlines) {
+  g_return_if_fail (SEN_IS_TEXT_VIEW (tv));
+
+  int width;
+  char ln_text[20];
+  PangoLayout *layout;
+
+  nlines = nlines > 10 ? nlines : 10;
+  g_snprintf (ln_text, sizeof ln_text, "%d", nlines);
+  layout = gtk_widget_create_pango_layout (GTK_WIDGET (tv), ln_text);
+  pango_layout_get_pixel_size (layout, &width, NULL);
+  g_object_unref (layout);
+
+  width += SEN_LINE_LEFT_RIGHT_PADDING*2;
+  if (width == tv->line_width)
+    return;
+  tv->line_width = width;
+  gtk_drawing_area_set_content_width (tv->line, width);
+}
+
+static void
+line_buffer_changed_cb (GtkTextBuffer *buf, SenTextView *tv) {
+  int nlines;
+
+  nlines = gtk_text_buffer_get_line_count (buf);
+  line_calculate_set_width (tv, nlines);
+  gtk_widget_queue_draw (GTK_WIDGET (tv->line));
+}
+
+static void
+scrolled_cb (GtkAdjustment *adjustment, SenTextView *tv) {
+  gtk_widget_queue_draw (GTK_WIDGET (tv->line));
+}
+
+static GtkWidget *
+sen_line_new (SenTextView *tv) {
+  GtkWidget *line;
+
+  line = gtk_drawing_area_new ();
+  gtk_drawing_area_set_draw_func (GTK_DRAWING_AREA (line), draw_lines, tv, NULL);
+  gtk_text_view_set_gutter (GTK_TEXT_VIEW (tv), GTK_TEXT_WINDOW_LEFT, line);
+  return line;
 }
 

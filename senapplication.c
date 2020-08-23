@@ -214,7 +214,7 @@ GdkDisplay *display;
 
   display = gtk_widget_get_display (GTK_WIDGET (win));
   GtkCssProvider *provider = gtk_css_provider_new ();
-  gtk_css_provider_load_from_data (provider, "textview {padding: 10px; font-family: monospace; font-size: 12pt;}", -1);
+  gtk_css_provider_load_from_data (provider, "textview {font-family: monospace; font-size: 12pt;}", -1);
   gtk_style_context_add_provider_for_display (display, GTK_STYLE_PROVIDER (provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
   }
 
