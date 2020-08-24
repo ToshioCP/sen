@@ -1,6 +1,6 @@
 project('sen', 'c')
 
-gtkdep = dependency('gtk4')
+gtkdep = dependency('gtk+-3.0')
 
 gnome=import('gnome')
 resources = gnome.compile_resources('resources','sen.gresource.xml')

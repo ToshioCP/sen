@@ -21,7 +21,7 @@ void
 search_entry_activate_cb (GtkSearchEntry *search_entry) {
   const char *text;
 
-  text = gtk_editable_get_text (GTK_EDITABLE (search_entry));
+  text = gtk_editable_get_chars (GTK_EDITABLE (search_entry), 0, -1);
   sen_text_view_search (get_current_tv (), text);
 }
 
@@ -59,7 +59,7 @@ void
 replace_cb (GtkButton *btnrp, gpointer user_data) {
   const char *text;
 
-  text = gtk_editable_get_text (GTK_EDITABLE (user_data));
+  text = gtk_editable_get_chars (GTK_EDITABLE (user_data), 0, -1);
   sen_text_view_replace (get_current_tv (), text);
 }
 
@@ -67,14 +67,14 @@ void
 replace_all_cb (GtkButton *btnrpall, gpointer user_data) {
   const char *text;
 
-  text = gtk_editable_get_text (GTK_EDITABLE (user_data));
+  text = gtk_editable_get_chars (GTK_EDITABLE (user_data), 0, -1);
   sen_text_view_replace_all (get_current_tv (), text);
 }
 
 static gboolean
-window_close_requested (GtkWindow *win, GtkNotebook *nb) {
+window_close_requested (GtkWindow *win, GdkEvent *event, GtkNotebook *nb) {
   notebook_page_close_all (nb);
-  return TRUE;
+  return FALSE;
 }
 
 static void
@@ -84,7 +84,7 @@ page_removed_cb (GtkNotebook *nb, GtkWidget *child, guint page_num, gpointer use
 
   if ((! destroyed) && (gtk_notebook_get_n_pages (nb) == 0)) {
     win = gtk_widget_get_ancestor (GTK_WIDGET (nb), GTK_TYPE_WINDOW);
-    gtk_window_destroy (GTK_WINDOW (win));
+    gtk_widget_destroy (GTK_WIDGET (win));
     destroyed = TRUE;
   }
 }
@@ -125,10 +125,14 @@ sen_activate (GApplication *application) {
   GtkWidget *win;
   GtkWidget *boxv;
   GtkNotebook *nb;
+  GList *list, *list_end;
 
   win = GTK_WIDGET (gtk_application_get_active_window (app));
-  boxv = gtk_window_get_child (GTK_WINDOW (win));
-  nb = GTK_NOTEBOOK (gtk_widget_get_last_child (boxv));
+  boxv = gtk_bin_get_child (GTK_BIN (win));
+
+  list = gtk_container_get_children (GTK_CONTAINER (boxv));
+  list_end = g_list_last (list);
+  nb = GTK_NOTEBOOK (list_end->data);
 
   notebook_page_new (nb);
   gtk_widget_show (GTK_WIDGET (win));
@@ -141,10 +145,14 @@ sen_open (GApplication *application, GFile ** files, int n_files, const char *hi
   GtkWidget *boxv;
   GtkNotebook *nb;
   int i;
+  GList *list, *list_end;
 
   win = GTK_WIDGET (gtk_application_get_active_window (app));
-  boxv = gtk_window_get_child (GTK_WINDOW (win));
-  nb = GTK_NOTEBOOK (gtk_widget_get_last_child (boxv));
+  boxv = gtk_bin_get_child (GTK_BIN (win));
+
+  list = gtk_container_get_children (GTK_CONTAINER (boxv));
+  list_end = g_list_last (list);
+  nb = GTK_NOTEBOOK (list_end->data);
 
   for (i = 0; i < n_files; i++)
     notebook_page_new_with_file (nb, files[i]);
@@ -169,11 +177,15 @@ sen_startup (GApplication *application) {
   win = GTK_APPLICATION_WINDOW (gtk_builder_get_object (build, "win"));
 
   nb = sen_notebook = GTK_NOTEBOOK (gtk_builder_get_object (build, "nb"));
-  g_signal_connect (win, "close-request", G_CALLBACK (window_close_requested), nb);
+  g_signal_connect (GTK_WIDGET (win), "delete-event", G_CALLBACK (window_close_requested), nb);
   g_signal_connect (nb, "page-removed", G_CALLBACK (page_removed_cb), NULL);
   gtk_window_set_application (GTK_WINDOW (win), app);
   btnm = GTK_MENU_BUTTON (gtk_builder_get_object (build, "btnm"));
   entry = GTK_ENTRY (gtk_builder_get_object (build, "replace_entry"));
+
+  gtk_widget_show_all (GTK_WIDGET (win));
+
+  gtk_builder_connect_signals (build, NULL);
 
   g_object_unref(build);
 
@@ -210,12 +222,12 @@ sen_startup (GApplication *application) {
     gtk_application_set_accels_for_action(GTK_APPLICATION(app), action_accels[i].action, action_accels[i].accels);
 
 
-GdkDisplay *display;
+GdkScreen *screen;
 
-  display = gtk_widget_get_display (GTK_WIDGET (win));
+  screen = gtk_widget_get_screen (GTK_WIDGET (win));
   GtkCssProvider *provider = gtk_css_provider_new ();
-  gtk_css_provider_load_from_data (provider, "textview {font-family: monospace; font-size: 12pt;}", -1);
-  gtk_style_context_add_provider_for_display (display, GTK_STYLE_PROVIDER (provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+  gtk_css_provider_load_from_data (provider, "textview {font-family: monospace; font-size: 12pt;}", -1, NULL);
+  gtk_style_context_add_provider_for_screen (screen, GTK_STYLE_PROVIDER (provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
   }
 
 int

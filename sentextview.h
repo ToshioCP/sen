@@ -31,7 +31,7 @@ GtkWidget *
 sen_text_view_new (void);
 
 void
-sen_text_view_construct (SenTextView *tv);
+sen_text_view_construct (SenTextView *tv, GtkDrawingArea *line);
 
 void
 sen_text_view_set_regexp (SenTextView *tv, gboolean button_status);

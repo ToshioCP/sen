@@ -14,6 +14,7 @@ static void
 file_changed (SenTextView *tv, GtkNotebook *nb) {
   GFile *file;
   char *filename;
+  GtkWidget *boxh;
   GtkWidget *scr;
   GtkWidget *label;
 
@@ -23,8 +24,9 @@ file_changed (SenTextView *tv, GtkNotebook *nb) {
   else
     filename = get_untitled ();
   scr = gtk_widget_get_parent (GTK_WIDGET (tv));
+  boxh = gtk_widget_get_parent (GTK_WIDGET (scr));
   label = gtk_label_new (filename);
-  gtk_notebook_set_tab_label (nb, scr, label);
+  gtk_notebook_set_tab_label (nb, boxh, label);
   g_object_unref (file);
   g_free (filename);
 }
@@ -39,13 +41,18 @@ page_close_all_cb (GtkNotebook *nb, GtkWidget *child, guint page_num, gpointer u
 SenTextView *
 notebook_page_get_current_text_view (GtkNotebook *nb) {
   int i;
+  GtkWidget *boxh;
+  GList *list, *list_end;
   GtkWidget *scr, *tv;
 
   if ((i = gtk_notebook_get_current_page (nb)) < 0)
     return NULL;
   else {
-    scr = gtk_notebook_get_nth_page (nb, i);
-    tv = gtk_scrolled_window_get_child (GTK_SCROLLED_WINDOW (scr));
+    boxh = gtk_notebook_get_nth_page (nb, i);
+    list = gtk_container_get_children (GTK_CONTAINER (boxh));
+    list_end = g_list_last (list);
+    scr = GTK_WIDGET (list_end->data);
+    tv = gtk_bin_get_child (GTK_BIN (scr));
     return SEN_TEXT_VIEW (tv);
   }
 }
@@ -60,19 +67,23 @@ notebook_page_close_all (GtkNotebook *nb) {
 
 static void
 page_close_cb (SenTextView *tv) {
+  GtkWidget *boxh;
   GtkNotebook *nb;
   GtkWidget *scr;
   int i;
 
   nb = GTK_NOTEBOOK (gtk_widget_get_ancestor (GTK_WIDGET (tv), GTK_TYPE_NOTEBOOK));
   scr = gtk_widget_get_parent (GTK_WIDGET (tv));
-  i = gtk_notebook_page_num (nb, GTK_WIDGET (scr));
+  boxh = gtk_widget_get_parent (GTK_WIDGET (scr));
+  i = gtk_notebook_page_num (nb, GTK_WIDGET (boxh));
   gtk_notebook_remove_page (nb, i);
 }
 
 void
 notebook_page_close(GtkNotebook *nb) {
   int i;
+  GtkWidget *boxh;
+  GList *list, *list_end;
   GtkWidget *scr;
   GtkWidget *tv;
   const char *tabname;
@@ -81,10 +92,14 @@ notebook_page_close(GtkNotebook *nb) {
 
   if ((i = gtk_notebook_get_current_page (nb)) < 0)
     return;
-  scr = gtk_notebook_get_nth_page (nb, i);
-  tv = gtk_scrolled_window_get_child (GTK_SCROLLED_WINDOW (scr));
+  boxh = gtk_notebook_get_nth_page (nb, i);
+  list = gtk_container_get_children (GTK_CONTAINER (boxh));
+  list_end = g_list_last (list);
+  scr = GTK_WIDGET (list_end->data);
+
+  tv = gtk_bin_get_child (GTK_BIN (scr));
   g_signal_connect (SEN_TEXT_VIEW (tv), "save-finished", G_CALLBACK (page_close_cb), NULL);
-  tabname = gtk_notebook_get_tab_label_text (nb, scr);
+  tabname = gtk_notebook_get_tab_label_text (nb, boxh);
   sen_text_view_save_before_close (SEN_TEXT_VIEW (tv), tabname);
 }
 
@@ -92,6 +107,8 @@ notebook_page_close(GtkNotebook *nb) {
 void
 notebook_page_save(GtkNotebook *nb) {
   int i;
+  GtkWidget *boxh;
+  GList *list, *list_end;
   GtkWidget *scr;
   GtkWidget *tv;
 
@@ -99,14 +116,19 @@ notebook_page_save(GtkNotebook *nb) {
 
   if ((i = gtk_notebook_get_current_page (nb)) < 0)
     return;
-  scr = gtk_notebook_get_nth_page (nb, i);
-  tv = gtk_scrolled_window_get_child (GTK_SCROLLED_WINDOW (scr));
+  boxh = gtk_notebook_get_nth_page (nb, i);
+  list = gtk_container_get_children (GTK_CONTAINER (boxh));
+  list_end = g_list_last (list);
+  scr = GTK_WIDGET (list_end->data);
+  tv = gtk_bin_get_child (GTK_BIN (scr));
   sen_text_view_save (SEN_TEXT_VIEW (tv));
 }
 
 void
 notebook_page_saveas(GtkNotebook *nb) {
   int i;
+  GtkWidget *boxh;
+  GList *list, *list_end;
   GtkWidget *scr;
   GtkWidget *tv;
 
@@ -114,28 +136,38 @@ notebook_page_saveas(GtkNotebook *nb) {
 
   if ((i = gtk_notebook_get_current_page (nb)) < 0)
     return;
-  scr = gtk_notebook_get_nth_page (nb, i);
-  tv = gtk_scrolled_window_get_child (GTK_SCROLLED_WINDOW (scr));
+  boxh = gtk_notebook_get_nth_page (nb, i);
+  list = gtk_container_get_children (GTK_CONTAINER (boxh));
+  list_end = g_list_last (list);
+  scr = GTK_WIDGET (list_end->data);
+  tv = gtk_bin_get_child (GTK_BIN (scr));
   sen_text_view_saveas (SEN_TEXT_VIEW (tv));
 }
 
 static void
 notebook_page_build (GtkNotebook *nb, GtkWidget *tv, char *filename) {
+  GtkWidget *boxh;
+  GtkWidget *line;
   GtkWidget *scr;
-  GtkNotebookPage *nbp;
   GtkWidget *lab;
   int i;
-  
-  scr = gtk_scrolled_window_new ();
-  gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scr), tv);
+
+  boxh = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+  line = gtk_drawing_area_new();
+  scr = gtk_scrolled_window_new (NULL, NULL);
+  gtk_box_pack_start (GTK_BOX (boxh), line, FALSE, FALSE, 0);
+  gtk_box_pack_start (GTK_BOX (boxh), scr, TRUE, TRUE, 0);
+
+  gtk_container_add (GTK_CONTAINER (scr), tv);
   lab = gtk_label_new (filename);
-  i = gtk_notebook_append_page (nb, scr, lab);
-  nbp = gtk_notebook_get_page (nb, scr);
-  g_object_set (nbp, "tab-expand", TRUE, NULL);
+  i = gtk_notebook_append_page (nb, boxh, lab);
+  gtk_container_child_set (GTK_CONTAINER (nb), boxh, "tab-expand", TRUE, NULL);
   g_signal_connect (GTK_TEXT_VIEW (tv), "change-file", G_CALLBACK (file_changed), nb);
+  gtk_widget_show_all (GTK_WIDGET (boxh));
   gtk_notebook_set_current_page (nb, i);
+
 /* The following constructor must be called after the SenTextView instance is set to GtkScrolledWindow as a child. */
-  sen_text_view_construct (SEN_TEXT_VIEW (tv));
+  sen_text_view_construct (SEN_TEXT_VIEW (tv), GTK_DRAWING_AREA (line));
 }
 
 static void
