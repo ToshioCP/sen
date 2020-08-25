@@ -194,7 +194,7 @@ sen_text_view_save_before_close (SenTextView *tv, const char *tabname) {
     gtk_window_set_transient_for (GTK_WINDOW (dialog), GTK_WINDOW (win));
     gtk_window_set_title (GTK_WINDOW (dialog), tabname);
     g_signal_connect (dialog, "response", G_CALLBACK (save_before_close_response), tv);
-    gtk_widget_show (dialog);
+    gtk_widget_show_all (dialog);
     g_object_unref (build);
   } else
     g_signal_emit (tv, sen_text_view_signals[SAVE_FINISHED], 0);
@@ -654,7 +654,7 @@ draw_lines (GtkWidget *line, cairo_t *cr, gpointer user_data) {
     pango_layout_set_text (layout, ln_text, -1);
     pango_layout_set_width (layout, (width-SEN_LINE_LEFT_RIGHT_PADDING*2)*PANGO_SCALE);
     pango_layout_set_alignment (layout, PANGO_ALIGN_RIGHT);
-    gtk_render_layout (context, cr, (double) SEN_LINE_LEFT_RIGHT_PADDING, (double) window_y-5, layout);
+    gtk_render_layout (context, cr, (double) SEN_LINE_LEFT_RIGHT_PADDING, (double) window_y, layout);
 /* The following codes are also possible */
 /*    cairo_move_to (cr, (double) SEN_LINE_LEFT_RIGHT_PADDING, (double) window_y);*/
 /*    pango_cairo_show_layout (cr, layout);*/

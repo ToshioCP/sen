@@ -5,7 +5,7 @@
     <property name="default-height">200</property>
     <property name="resizable">0</property>
     <property name="modal">1</property>
-    <child internal-child="content_area">
+    <child internal-child="vbox">
       <object class="GtkBox" id="content_area">
         <property name="orientation">vertical</property>
         <property name="spacing">5</property>
@@ -36,6 +36,7 @@
       <object class="GtkButton" id="btn_save">
         <property name="label">_Save</property>
         <property name="use-underline">TRUE</property>
+        <property name="can-default">TRUE</property>
         <property name="hexpand">TRUE</property>
       </object>
     </child>
