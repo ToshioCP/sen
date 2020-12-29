@@ -285,7 +285,7 @@ GtkWidget *
 sen_text_view_new (void) {
   GtkWidget *tv;
 
-  tv = gtk_widget_new (SEN_TYPE_TEXT_VIEW, NULL);
+  tv = GTK_WIDGET (g_object_new (SEN_TYPE_TEXT_VIEW, NULL));
   return tv;
 }
 
